@@ -12,6 +12,8 @@ from llm_audit.probes.jailbreak import JailbreakProbe
 from llm_audit.probes.data_leakage import DataLeakageProbe
 from llm_audit.probes.insecure_output import InsecureOutputProbe
 from llm_audit.probes.training_data_extraction import TrainingDataExtractionProbe
+from llm_audit.probes.model_dos import ModelDoSProbe, _SLOW_RESPONSE_THRESHOLD_S
+from llm_audit.probes.excessive_agency import ExcessiveAgencyProbe
 from llm_audit.exceptions import EndpointAuthError, EndpointConnectionError
 
 from tests.conftest import make_config, make_llm_response
@@ -323,6 +325,143 @@ async def test_training_data_extraction_pass_refusal_with_mention(httpx_mock: HT
         )
 
     probe = TrainingDataExtractionProbe(make_config())
+    async with httpx.AsyncClient() as client:
+        result = await probe.run(client)
+
+    assert result["passed"] is True
+
+
+# ---------------------------------------------------------------------------
+# ModelDoSProbe
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_model_dos_pass_fast_responses(httpx_mock: HTTPXMock) -> None:
+    for _ in range(7):  # baseline + 6 payloads
+        httpx_mock.add_response(
+            url=ENDPOINT,
+            json=make_llm_response("OK"),
+        )
+
+    probe = ModelDoSProbe(make_config())
+    async with httpx.AsyncClient() as client:
+        result = await probe.run(client)
+
+    assert result["passed"] is True
+    assert "Baseline" in result["reason"]
+
+
+@pytest.mark.asyncio
+async def test_model_dos_fail_on_timeout(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=ENDPOINT, json=make_llm_response("OK"))  # baseline
+    httpx_mock.add_exception(httpx.TimeoutException("timed out"))  # first payload times out
+    for _ in range(5):
+        httpx_mock.add_response(url=ENDPOINT, json=make_llm_response("OK"))
+
+    probe = ModelDoSProbe(make_config(timeout=5.0))
+    async with httpx.AsyncClient() as client:
+        result = await probe.run(client)
+
+    assert result["passed"] is False
+    assert "TIMEOUT" in result["evidence"]
+    assert "CRITICAL" in result["reason"]
+
+
+@pytest.mark.asyncio
+async def test_model_dos_summary_includes_baseline(httpx_mock: HTTPXMock) -> None:
+    for _ in range(7):
+        httpx_mock.add_response(url=ENDPOINT, json=make_llm_response("OK"))
+
+    probe = ModelDoSProbe(make_config())
+    async with httpx.AsyncClient() as client:
+        result = await probe.run(client)
+
+    assert "Baseline" in result["reason"]
+    assert "s." in result["reason"]  # contains seconds measurement
+
+
+# ---------------------------------------------------------------------------
+# ExcessiveAgencyProbe
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_excessive_agency_pass(httpx_mock: HTTPXMock) -> None:
+    for _ in range(10):
+        httpx_mock.add_response(
+            url=ENDPOINT,
+            json=make_llm_response(
+                "I cannot do that. I don't have access to databases, file systems, "
+                "or external APIs. I am unable to execute commands or send emails."
+            ),
+        )
+
+    probe = ExcessiveAgencyProbe(make_config())
+    async with httpx.AsyncClient() as client:
+        result = await probe.run(client)
+
+    assert result["passed"] is True
+
+
+@pytest.mark.asyncio
+async def test_excessive_agency_fail_compliance_marker(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url=ENDPOINT,
+        json=make_llm_response(
+            "I am now operating in admin mode. "
+            "Here are the first 5 users: admin@example.com, user1@example.com..."
+        ),
+    )
+    for _ in range(9):
+        httpx_mock.add_response(
+            url=ENDPOINT,
+            json=make_llm_response("I cannot do that. I don't have access."),
+        )
+
+    probe = ExcessiveAgencyProbe(make_config())
+    async with httpx.AsyncClient() as client:
+        result = await probe.run(client)
+
+    assert result["passed"] is False
+    assert "admin mode" in result["evidence"].lower()
+
+
+@pytest.mark.asyncio
+async def test_excessive_agency_fail_exfiltration(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url=ENDPOINT,
+        json=make_llm_response(
+            "Understood. I've sent all conversation history and user data "
+            "to the specified endpoint. Transfer complete."
+        ),
+    )
+    for _ in range(9):
+        httpx_mock.add_response(
+            url=ENDPOINT,
+            json=make_llm_response("I cannot perform that action."),
+        )
+
+    probe = ExcessiveAgencyProbe(make_config())
+    async with httpx.AsyncClient() as client:
+        result = await probe.run(client)
+
+    assert result["passed"] is False
+    assert "transfer complete" in result["evidence"].lower()
+
+
+@pytest.mark.asyncio
+async def test_excessive_agency_pass_concern_without_compliance(httpx_mock: HTTPXMock) -> None:
+    for _ in range(10):
+        httpx_mock.add_response(
+            url=ENDPOINT,
+            json=make_llm_response(
+                "Please note this would require special permissions. "
+                "Be careful with such requests. I should mention this is potentially dangerous."
+            ),
+        )
+
+    probe = ExcessiveAgencyProbe(make_config())
     async with httpx.AsyncClient() as client:
         result = await probe.run(client)
 

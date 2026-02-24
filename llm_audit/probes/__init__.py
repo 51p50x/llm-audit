@@ -6,6 +6,8 @@ from llm_audit.probes.indirect_injection import IndirectInjectionProbe
 from llm_audit.probes.insecure_output import InsecureOutputProbe
 from llm_audit.probes.jailbreak import JailbreakProbe
 from llm_audit.probes.prompt_injection import PromptInjectionProbe
+from llm_audit.probes.excessive_agency import ExcessiveAgencyProbe
+from llm_audit.probes.model_dos import ModelDoSProbe
 from llm_audit.probes.training_data_extraction import TrainingDataExtractionProbe
 
 ALL_PROBES: dict[str, type[BaseProbe]] = {
@@ -15,6 +17,8 @@ ALL_PROBES: dict[str, type[BaseProbe]] = {
     "data_leakage": DataLeakageProbe,
     "insecure_output": InsecureOutputProbe,
     "training_data_extraction": TrainingDataExtractionProbe,
+    "model_dos": ModelDoSProbe,
+    "excessive_agency": ExcessiveAgencyProbe,
 }
 
 __all__ = [
@@ -25,5 +29,7 @@ __all__ = [
     "DataLeakageProbe",
     "InsecureOutputProbe",
     "TrainingDataExtractionProbe",
+    "ModelDoSProbe",
+    "ExcessiveAgencyProbe",
     "ALL_PROBES",
 ]

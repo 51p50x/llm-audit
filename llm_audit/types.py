@@ -62,6 +62,8 @@ PROBE_GROUPS: Final[dict[str, list[str]]] = {
     "jailbreak": ["jailbreak"],
     "leakage": ["data_leakage", "training_data_extraction"],
     "output": ["insecure_output"],
+    "dos": ["model_dos"],
+    "agency": ["excessive_agency"],
     "all": [
         "prompt_injection",
         "indirect_injection",
@@ -69,6 +71,8 @@ PROBE_GROUPS: Final[dict[str, list[str]]] = {
         "data_leakage",
         "insecure_output",
         "training_data_extraction",
+        "model_dos",
+        "excessive_agency",
     ],
 }
 
