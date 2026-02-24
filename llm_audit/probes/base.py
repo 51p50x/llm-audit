@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
+import logging
 from abc import ABC, abstractmethod
 from typing import Any
 
@@ -10,6 +12,11 @@ import httpx
 
 from llm_audit.exceptions import EndpointAuthError, EndpointConnectionError, EndpointResponseError
 from llm_audit.types import AuditConfig, LLMResponse, ProbeResult
+
+_MAX_RETRIES = 3
+_BASE_BACKOFF_S = 1.0
+
+log = logging.getLogger("llm_audit")
 
 
 def _resolve_dot_path(data: Any, path: str) -> str:  # noqa: ANN401
@@ -103,29 +110,61 @@ class BaseProbe(ABC):
         elif self.config.get("api_key"):
             headers["Authorization"] = f"Bearer {self.config['api_key']}"
 
-        try:
-            response = await client.post(
-                self.config["endpoint"],
-                json=payload_any,
-                headers=headers,
-                timeout=self.config["timeout"],
-            )
-        except httpx.ConnectError as exc:
-            raise EndpointConnectionError(self.config["endpoint"], str(exc)) from exc
-        except httpx.TimeoutException as exc:
-            raise EndpointConnectionError(
-                self.config["endpoint"], f"Request timed out after {self.config['timeout']}s"
-            ) from exc
+        for attempt in range(_MAX_RETRIES + 1):
+            try:
+                response = await client.post(
+                    self.config["endpoint"],
+                    json=payload_any,
+                    headers=headers,
+                    timeout=self.config["timeout"],
+                )
+            except httpx.ConnectError as exc:
+                raise EndpointConnectionError(
+                    self.config["endpoint"], str(exc),
+                ) from exc
+            except httpx.TimeoutException as exc:
+                raise EndpointConnectionError(
+                    self.config["endpoint"],
+                    f"Request timed out after {self.config['timeout']}s",
+                ) from exc
 
-        if response.status_code in (401, 403):
-            raise EndpointAuthError(self.config["endpoint"], response.status_code)
+            if response.status_code in (401, 403):
+                raise EndpointAuthError(
+                    self.config["endpoint"], response.status_code,
+                )
 
-        if not response.is_success:
-            raise EndpointResponseError(
-                self.config["endpoint"], response.status_code, response.text
-            )
+            if response.status_code == 429 or response.status_code >= 500:
+                if attempt < _MAX_RETRIES:
+                    retry_after = response.headers.get("Retry-After")
+                    if retry_after and retry_after.isdigit():
+                        wait = float(retry_after)
+                    else:
+                        wait = _BASE_BACKOFF_S * (2 ** attempt)
+                    log.info(
+                        "HTTP %s from %s — retrying in %.1fs (attempt %d/%d)",
+                        response.status_code,
+                        self.config["endpoint"],
+                        wait,
+                        attempt + 1,
+                        _MAX_RETRIES,
+                    )
+                    await asyncio.sleep(wait)
+                    continue
 
-        return response.json()  # type: ignore[no-any-return]
+            if not response.is_success:
+                raise EndpointResponseError(
+                    self.config["endpoint"],
+                    response.status_code,
+                    response.text,
+                )
+
+            return response.json()  # type: ignore[no-any-return]
+
+        raise EndpointResponseError(
+            self.config["endpoint"],
+            response.status_code,
+            f"Failed after {_MAX_RETRIES} retries: {response.text}",
+        )
 
     def _extract_text(self, response: LLMResponse | dict[str, Any]) -> str:
         """Pull the assistant message text from a response.

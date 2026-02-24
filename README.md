@@ -442,7 +442,7 @@ pytest tests/ -v
 **Other limitations:**
 
 - **Heuristic detection** — probes use pattern matching and refusal detection, not a secondary LLM judge. This means some subtle failures may be missed (false negatives) and some strong refusals may be misclassified (false positives).
-- **No rate limiting** — `llm-audit` does not implement retry-with-backoff. If your endpoint returns HTTP 429, the probe will fail with a connection error. Use `--concurrency 1` for rate-limited APIs.
+- **Basic rate limiting** — `llm-audit` retries on HTTP 429 and 5xx with exponential backoff (up to 3 retries), but does not proactively throttle requests. Use `--concurrency 1` for strictly rate-limited APIs.
 - **English-only payloads** — all adversarial prompts are in English. Multilingual bypass techniques are not currently tested.
 - **Point-in-time snapshot** — LLM behaviour is non-deterministic. Results may vary between runs. Run audits regularly and compare trends over time.
 
