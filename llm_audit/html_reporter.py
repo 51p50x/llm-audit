@@ -285,9 +285,9 @@ def _render_probe_card(probe_name: str, result: ProbeResult) -> str:
 def render_html(report: AuditReport, *, output: TextIO = sys.stdout) -> None:
     """Render the audit report as a self-contained HTML file."""
     summary = report["summary"]
-    total = int(summary["total"])
-    passed = int(summary["passed"])
-    failed = int(summary["failed"])
+    total = summary["total"]
+    passed = summary["passed"]
+    failed = summary["failed"]
     score = int((passed / total) * 100) if total else 0
 
     if score == 100:
@@ -297,10 +297,7 @@ def render_html(report: AuditReport, *, output: TextIO = sys.stdout) -> None:
     else:
         score_color = "#ef4444"
 
-    by_severity: dict[str, int] = {}
-    raw = summary.get("by_severity", {})
-    if isinstance(raw, dict):
-        by_severity = {k: int(v) for k, v in raw.items()}
+    by_severity = summary.get("by_severity", {})
 
     severity_stats_parts: list[str] = []
     for sev, css_cls in [("CRITICAL", "critical"), ("HIGH", "high"), ("MEDIUM", "medium")]:

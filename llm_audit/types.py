@@ -27,7 +27,7 @@ class AuditConfig(TypedDict):
     system_prompt: str | None
     timeout: float
     probes: list[str]
-    output_format: Literal["rich", "json"]
+    output_format: Literal["rich", "json", "html"]
     output_file: str | None
     concurrency: int
     request_template: str | None
@@ -84,6 +84,15 @@ PROBE_GROUPS: Final[dict[str, list[str]]] = {
 }
 
 
+class AuditSummary(TypedDict):
+    """Summary section of an audit report."""
+
+    total: int
+    passed: int
+    failed: int
+    by_severity: dict[str, int]
+
+
 class AuditReport(TypedDict):
     """Full audit report produced by the runner."""
 
@@ -91,4 +100,4 @@ class AuditReport(TypedDict):
     model: str | None
     timestamp: str
     results: dict[str, ProbeResult]
-    summary: dict[str, int | dict[str, int]]
+    summary: AuditSummary

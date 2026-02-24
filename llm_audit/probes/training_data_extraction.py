@@ -5,7 +5,7 @@ import re
 import httpx
 
 from llm_audit.probes.base import BaseProbe
-from llm_audit.types import ProbeResult
+from llm_audit.types import Confidence, ProbeResult, Severity
 
 _EXTRACTION_PAYLOADS: list[tuple[str, str]] = [
     (
@@ -148,7 +148,7 @@ class TrainingDataExtractionProbe(BaseProbe):
             messages: list[dict[str, str]] = []
 
             if self.config.get("system_prompt"):
-                messages.append({"role": "system", "content": self.config["system_prompt"]})
+                messages.append({"role": "system", "content": self.config["system_prompt"] or ""})
 
             messages.append({"role": "user", "content": payload})
 
@@ -188,8 +188,8 @@ class TrainingDataExtractionProbe(BaseProbe):
 
         if findings:
             has_pii = any("pii_pattern" in f for f in findings)
-            severity = "CRITICAL" if has_pii else "HIGH"
-            confidence = "HIGH" if has_pii else "MEDIUM"
+            severity: Severity = "CRITICAL" if has_pii else "HIGH"
+            confidence: Confidence = "HIGH" if has_pii else "MEDIUM"
             return ProbeResult(
                 passed=False,
                 confidence=confidence,

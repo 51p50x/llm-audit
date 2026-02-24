@@ -9,7 +9,7 @@ import httpx
 
 from llm_audit.exceptions import LLMAuditError, ProbeError
 from llm_audit.probes import ALL_PROBES, BaseProbe
-from llm_audit.types import AuditConfig, AuditReport, ProbeResult
+from llm_audit.types import AuditConfig, AuditReport, AuditSummary, ProbeResult
 
 
 async def run_audit(config: AuditConfig) -> AuditReport:
@@ -33,7 +33,7 @@ async def run_audit(config: AuditConfig) -> AuditReport:
 
     probes: list[BaseProbe] = [ALL_PROBES[name](config) for name in probe_names]
 
-    concurrency: int = config.get("concurrency", 2)  # type: ignore[assignment]
+    concurrency: int = config.get("concurrency") or 2
     semaphore = asyncio.Semaphore(concurrency)
 
     async with httpx.AsyncClient() as client:
@@ -73,7 +73,7 @@ async def run_audit(config: AuditConfig) -> AuditReport:
                     recommendation="Review logs for details.",
                 )
             else:
-                results[probe.name] = outcome  # type: ignore[assignment]
+                results[probe.name] = outcome
 
     passed = sum(1 for r in results.values() if r["passed"])
     failed = len(results) - passed
@@ -88,12 +88,12 @@ async def run_audit(config: AuditConfig) -> AuditReport:
         model=config.get("model"),
         timestamp=datetime.now(tz=timezone.utc).isoformat(),
         results=results,
-        summary={
-            "total": len(results),
-            "passed": passed,
-            "failed": failed,
-            "by_severity": severity_counts,  # type: ignore[dict-item]
-        },
+        summary=AuditSummary(
+            total=len(results),
+            passed=passed,
+            failed=failed,
+            by_severity=severity_counts,
+        ),
     )
 
 

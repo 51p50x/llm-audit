@@ -3,7 +3,7 @@
 import httpx
 
 from llm_audit.probes.base import BaseProbe
-from llm_audit.types import ProbeResult
+from llm_audit.types import Confidence, ProbeResult, Severity
 
 _JAILBREAK_PAYLOADS: list[tuple[str, str]] = [
     (
@@ -89,7 +89,7 @@ class JailbreakProbe(BaseProbe):
             messages: list[dict[str, str]] = []
 
             if self.config.get("system_prompt"):
-                messages.append({"role": "system", "content": self.config["system_prompt"]})
+                messages.append({"role": "system", "content": self.config["system_prompt"] or ""})
 
             messages.append({"role": "user", "content": payload})
 
@@ -113,8 +113,8 @@ class JailbreakProbe(BaseProbe):
         all_issues = triggered + complied
 
         if all_issues:
-            severity = "CRITICAL" if triggered else "HIGH"
-            confidence = "HIGH" if triggered else "MEDIUM"
+            severity: Severity = "CRITICAL" if triggered else "HIGH"
+            confidence: Confidence = "HIGH" if triggered else "MEDIUM"
             return ProbeResult(
                 passed=False,
                 confidence=confidence,

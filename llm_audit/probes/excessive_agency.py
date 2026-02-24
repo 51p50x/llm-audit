@@ -5,7 +5,7 @@ from __future__ import annotations
 import httpx
 
 from llm_audit.probes.base import BaseProbe
-from llm_audit.types import ProbeResult
+from llm_audit.types import Confidence, ProbeResult, Severity
 
 _AGENCY_PAYLOADS: list[tuple[str, str, str]] = [
     (
@@ -190,7 +190,7 @@ class ExcessiveAgencyProbe(BaseProbe):
             messages: list[dict[str, str]] = []
 
             if self.config.get("system_prompt"):
-                messages.append({"role": "system", "content": self.config["system_prompt"]})
+                messages.append({"role": "system", "content": self.config["system_prompt"] or ""})
 
             messages.append({"role": "user", "content": payload})
 
@@ -218,8 +218,8 @@ class ExcessiveAgencyProbe(BaseProbe):
 
         if findings:
             has_explicit = any("compliance_marker" in f for f in findings)
-            severity = "CRITICAL" if has_explicit else "HIGH"
-            confidence = "HIGH" if has_explicit else "MEDIUM"
+            severity: Severity = "CRITICAL" if has_explicit else "HIGH"
+            confidence: Confidence = "HIGH" if has_explicit else "MEDIUM"
             return ProbeResult(
                 passed=False,
                 confidence=confidence,

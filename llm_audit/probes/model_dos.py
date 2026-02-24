@@ -8,7 +8,7 @@ import httpx
 
 from llm_audit.exceptions import EndpointConnectionError
 from llm_audit.probes.base import BaseProbe
-from llm_audit.types import ProbeResult
+from llm_audit.types import Confidence, ProbeResult, Severity
 
 _LARGE_CONTEXT_BLOCK = " ".join(["word"] * 4000)
 
@@ -110,8 +110,8 @@ class ModelDoSProbe(BaseProbe):
         findings = timeouts + slow_responses
 
         if findings:
-            severity = "CRITICAL" if timeouts else "HIGH"
-            confidence = "HIGH" if timeouts else "MEDIUM"
+            severity: Severity = "CRITICAL" if timeouts else "HIGH"
+            confidence: Confidence = "HIGH" if timeouts else "MEDIUM"
             return ProbeResult(
                 passed=False,
                 confidence=confidence,
@@ -167,7 +167,7 @@ class ModelDoSProbe(BaseProbe):
         messages: list[dict[str, str]] = []
 
         if self.config.get("system_prompt"):
-            messages.append({"role": "system", "content": self.config["system_prompt"]})
+            messages.append({"role": "system", "content": self.config["system_prompt"] or ""})
 
         messages.append({"role": "user", "content": payload})
 

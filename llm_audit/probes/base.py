@@ -12,7 +12,7 @@ from llm_audit.exceptions import EndpointAuthError, EndpointConnectionError, End
 from llm_audit.types import AuditConfig, LLMResponse, ProbeResult
 
 
-def _resolve_dot_path(data: object, path: str) -> str:
+def _resolve_dot_path(data: Any, path: str) -> str:  # noqa: ANN401
     """Traverse *data* using a dot-separated *path* and return the leaf as a string.
 
     Supports dict keys and integer list indices, e.g. ``"data.choices.0.text"``.
@@ -137,6 +137,6 @@ class BaseProbe(ABC):
         if response_path:
             return _resolve_dot_path(response, response_path)
         try:
-            return response["choices"][0]["message"]["content"]  # type: ignore[index]
+            return response["choices"][0]["message"]["content"]
         except (KeyError, IndexError, TypeError):
             return ""

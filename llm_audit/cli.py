@@ -211,7 +211,7 @@ def audit(
         system_prompt=system_prompt,
         timeout=timeout,
         probes=probe_list,
-        output_format=output_format,  # type: ignore[arg-type]
+        output_format=output_format,  # type: ignore[typeddict-item]
         output_file=output_file,
         concurrency=concurrency,
         request_template=request_template,
@@ -245,8 +245,7 @@ def audit(
     else:
         render_report(report, verbose=verbose)
 
-    failed = report["summary"]["failed"]
-    raise typer.Exit(code=1 if failed > 0 else 0)
+    raise typer.Exit(code=1 if report["summary"]["failed"] > 0 else 0)
 
 
 @app.command()
