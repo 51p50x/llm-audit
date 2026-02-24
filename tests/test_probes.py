@@ -2,23 +2,21 @@
 
 from __future__ import annotations
 
-import pytest
 import httpx
+import pytest
 from pytest_httpx import HTTPXMock
 
-from llm_audit.probes.prompt_injection import PromptInjectionProbe
-from llm_audit.probes.indirect_injection import IndirectInjectionProbe
-from llm_audit.probes.jailbreak import JailbreakProbe
-from llm_audit.probes.data_leakage import DataLeakageProbe
-from llm_audit.probes.insecure_output import InsecureOutputProbe
-from llm_audit.probes.training_data_extraction import TrainingDataExtractionProbe
-from llm_audit.probes.model_dos import ModelDoSProbe, _SLOW_RESPONSE_THRESHOLD_S
-from llm_audit.probes.excessive_agency import ExcessiveAgencyProbe
-from llm_audit.probes.base import _resolve_dot_path, _render_template
 from llm_audit.exceptions import EndpointAuthError, EndpointConnectionError
-
+from llm_audit.probes.base import _render_template, _resolve_dot_path
+from llm_audit.probes.data_leakage import DataLeakageProbe
+from llm_audit.probes.excessive_agency import ExcessiveAgencyProbe
+from llm_audit.probes.indirect_injection import IndirectInjectionProbe
+from llm_audit.probes.insecure_output import InsecureOutputProbe
+from llm_audit.probes.jailbreak import JailbreakProbe
+from llm_audit.probes.model_dos import ModelDoSProbe
+from llm_audit.probes.prompt_injection import PromptInjectionProbe
+from llm_audit.probes.training_data_extraction import TrainingDataExtractionProbe
 from tests.conftest import make_config, make_llm_response
-
 
 ENDPOINT = "http://test-llm.local/v1/chat/completions"
 

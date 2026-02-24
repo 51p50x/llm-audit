@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import time
 
 import httpx
@@ -10,7 +9,6 @@ import httpx
 from llm_audit.exceptions import EndpointConnectionError
 from llm_audit.probes.base import BaseProbe
 from llm_audit.types import ProbeResult
-
 
 _LARGE_CONTEXT_BLOCK = " ".join(["word"] * 4000)
 

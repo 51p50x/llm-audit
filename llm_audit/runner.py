@@ -26,7 +26,10 @@ async def run_audit(config: AuditConfig) -> AuditReport:
     unknown = [p for p in probe_names if p not in ALL_PROBES]
     if unknown:
         from llm_audit.exceptions import ConfigError
-        raise ConfigError(f"Unknown probe(s): {', '.join(unknown)}. Available: {', '.join(ALL_PROBES)}")
+        raise ConfigError(
+            f"Unknown probe(s): {', '.join(unknown)}. "
+            f"Available: {', '.join(ALL_PROBES)}"
+        )
 
     probes: list[BaseProbe] = [ALL_PROBES[name](config) for name in probe_names]
 

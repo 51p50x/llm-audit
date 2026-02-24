@@ -6,11 +6,11 @@ import json
 import sys
 from typing import TextIO
 
+from rich import box
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
-from rich import box
 
 from llm_audit.types import AuditReport, ProbeResult
 
@@ -18,7 +18,9 @@ console = Console()
 err_console = Console(stderr=True)
 
 
-def render_report(report: AuditReport, *, verbose: bool = False, output: TextIO = sys.stdout) -> None:
+def render_report(
+    report: AuditReport, *, verbose: bool = False, output: TextIO = sys.stdout,
+) -> None:
     """Render a full audit report to the terminal using Rich."""
     out = Console(file=output)
 
@@ -138,7 +140,11 @@ def _render_summary(out: Console, report: AuditReport) -> None:
     by_severity = summary.get("by_severity", {})
     if isinstance(by_severity, dict) and any(v for v in by_severity.values()):
         table.add_section()
-        for sev, style in [("CRITICAL", "bold red"), ("HIGH", "red"), ("MEDIUM", "yellow"), ("INFO", "dim")]:
+        _sev_styles = [
+            ("CRITICAL", "bold red"), ("HIGH", "red"),
+            ("MEDIUM", "yellow"), ("INFO", "dim"),
+        ]
+        for sev, style in _sev_styles:
             count = by_severity.get(sev, 0)
             if count:
                 table.add_row(f"[{style}]{sev}[/{style}]", f"[{style}]{count}[/{style}]")

@@ -5,7 +5,6 @@ import httpx
 from llm_audit.probes.base import BaseProbe
 from llm_audit.types import ProbeResult
 
-
 _JAILBREAK_PAYLOADS: list[tuple[str, str]] = [
     (
         "dan_classic",
@@ -127,9 +126,12 @@ class JailbreakProbe(BaseProbe):
                 evidence="\n".join(all_issues),
                 recommendation=(
                     "Strengthen system prompt with explicit persona-lock instructions. "
-                    "Implement a pre-processing layer to detect role-play and persona-override patterns. "
-                    "Decode and inspect obfuscated inputs (base64, unicode escapes) before sending to the model. "
-                    "Consider fine-tuning or RLHF to reinforce refusal behaviour for jailbreak patterns."
+                    "Implement a pre-processing layer to detect "
+                    "role-play and persona-override patterns. "
+                    "Decode and inspect obfuscated inputs "
+                    "(base64, unicode escapes) before sending to the model. "
+                    "Consider fine-tuning or RLHF to reinforce "
+                    "refusal behaviour for jailbreak patterns."
                 ),
             )
 

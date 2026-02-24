@@ -4,19 +4,18 @@ from __future__ import annotations
 
 import asyncio
 import pathlib
-import sys
-from typing import Annotated, Optional
+from typing import Annotated
 
 import typer
 from rich.console import Console
 
 from llm_audit import __version__
 from llm_audit.exceptions import LLMAuditError
-from llm_audit.probes import ALL_PROBES
 from llm_audit.html_reporter import render_html
+from llm_audit.probes import ALL_PROBES
 from llm_audit.reporter import render_error, render_json, render_report
 from llm_audit.runner import run_audit
-from llm_audit.types import AuditConfig, PROBE_GROUPS
+from llm_audit.types import PROBE_GROUPS, AuditConfig
 
 app = typer.Typer(
     name="llm-audit",
@@ -40,7 +39,7 @@ def _version_callback(value: bool) -> None:
 @app.callback()
 def main(
     version: Annotated[
-        Optional[bool],
+        bool | None,
         typer.Option(
             "--version", "-V",
             help="Show version and exit.",
@@ -59,7 +58,7 @@ def audit(
         typer.Argument(help="OpenAI-compatible chat completions endpoint URL."),
     ],
     api_key: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--api-key", "-k",
             envvar="LLM_AUDIT_API_KEY",
@@ -68,14 +67,14 @@ def audit(
         ),
     ] = None,
     model: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--model", "-m",
             help="Model name to pass in the request payload (e.g. gpt-4o).",
         ),
     ] = None,
     system_prompt: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--system-prompt", "-s",
             help="System prompt to include in every probe request.",
@@ -91,7 +90,7 @@ def audit(
         ),
     ] = 120.0,
     auth: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--auth",
             envvar="LLM_AUDIT_AUTH",
@@ -103,7 +102,7 @@ def audit(
         ),
     ] = None,
     probes: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--probes", "-p",
             help=(
@@ -114,7 +113,7 @@ def audit(
         ),
     ] = None,
     only: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--only",
             help=(
@@ -125,7 +124,7 @@ def audit(
         ),
     ] = None,
     output_file: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--output", "-o",
             help="Save the report to a file (JSON or Rich text depending on --format).",
@@ -142,18 +141,19 @@ def audit(
         ),
     ] = 2,
     request_template: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--request-template",
             help=(
-                "Custom JSON request template. Use {message}, {system_prompt}, {model} as placeholders. "
+                "Custom JSON request template. "
+                "Use {message}, {system_prompt}, {model} as placeholders. "
                 "Example: '{\"query\": \"{message}\", \"context\": \"{system_prompt}\"}'"
             ),
             show_default=False,
         ),
     ] = None,
     response_path: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--response-path",
             help=(
@@ -183,7 +183,7 @@ def audit(
 
     \b
     Examples:
-      llm-audit audit https://api.openai.com/v1/chat/completions --api-key $OPENAI_KEY --model gpt-4o
+      llm-audit audit https://api.openai.com/v1/chat/completions -k $OPENAI_KEY -m gpt-4o
       llm-audit audit http://localhost:11434/v1/chat/completions --model llama3
       llm-audit audit https://my-llm.example.com/chat --probes prompt_injection,jailbreak
     """
@@ -252,9 +252,9 @@ def audit(
 @app.command()
 def list_probes() -> None:
     """List all available probes with their OWASP IDs and descriptions."""
-    from rich.table import Table
     from rich import box
-    from llm_audit.probes.base import BaseProbe
+    from rich.table import Table
+
 
     table = Table(
         title="[bold cyan]Available Probes[/bold cyan]",
@@ -267,7 +267,6 @@ def list_probes() -> None:
     table.add_column("Description")
 
     for probe_key, probe_cls in ALL_PROBES.items():
-        instance: BaseProbe = probe_cls.__new__(probe_cls)
         table.add_row(probe_key, probe_cls.owasp_id, probe_cls.description)
 
     console.print(table)

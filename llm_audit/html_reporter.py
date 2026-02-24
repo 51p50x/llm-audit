@@ -3,12 +3,10 @@
 from __future__ import annotations
 
 import html
-import json
 import sys
 from typing import TextIO
 
 from llm_audit.types import AuditReport, ProbeResult
-
 
 _SEVERITY_COLOR: dict[str, str] = {
     "CRITICAL": "#dc2626",
@@ -54,8 +52,14 @@ _HTML_TEMPLATE = """\
       border-radius: 0.5rem;
       padding: 1rem 1.25rem;
     }}
-    .meta-card .label {{ color: #94a3b8; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }}
-    .meta-card .value {{ font-size: 1rem; font-weight: 600; color: #f1f5f9; word-break: break-all; }}
+    .meta-card .label {{
+      color: #94a3b8; font-size: 0.75rem;
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }}
+    .meta-card .value {{
+      font-size: 1rem; font-weight: 600;
+      color: #f1f5f9; word-break: break-all;
+    }}
     .summary-grid {{
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));

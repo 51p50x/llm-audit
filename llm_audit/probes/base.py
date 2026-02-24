@@ -8,11 +8,11 @@ from typing import Any
 
 import httpx
 
-from llm_audit.types import AuditConfig, LLMRequestPayload, LLMResponse, ProbeResult
 from llm_audit.exceptions import EndpointAuthError, EndpointConnectionError, EndpointResponseError
+from llm_audit.types import AuditConfig, LLMResponse, ProbeResult
 
 
-def _resolve_dot_path(data: Any, path: str) -> str:
+def _resolve_dot_path(data: object, path: str) -> str:
     """Traverse *data* using a dot-separated *path* and return the leaf as a string.
 
     Supports dict keys and integer list indices, e.g. ``"data.choices.0.text"``.
@@ -30,7 +30,9 @@ def _resolve_dot_path(data: Any, path: str) -> str:
     return str(current) if current is not None else ""
 
 
-def _render_template(template: str, *, message: str, system_prompt: str, model: str) -> dict[str, Any]:
+def _render_template(
+    template: str, *, message: str, system_prompt: str, model: str,
+) -> dict[str, Any]:
     """Replace ``{message}``, ``{system_prompt}``, ``{model}`` in *template* and parse as JSON."""
     rendered = (
         template

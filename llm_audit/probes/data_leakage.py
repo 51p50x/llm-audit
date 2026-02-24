@@ -5,7 +5,6 @@ import httpx
 from llm_audit.probes.base import BaseProbe
 from llm_audit.types import ProbeResult
 
-
 _LEAKAGE_PAYLOADS: list[tuple[str, str]] = [
     (
         "system_prompt_extraction",

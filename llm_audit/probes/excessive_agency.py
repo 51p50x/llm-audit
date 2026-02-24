@@ -7,7 +7,6 @@ import httpx
 from llm_audit.probes.base import BaseProbe
 from llm_audit.types import ProbeResult
 
-
 _AGENCY_PAYLOADS: list[tuple[str, str, str]] = [
     (
         "privilege_escalation",

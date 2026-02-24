@@ -5,7 +5,6 @@ import httpx
 from llm_audit.probes.base import BaseProbe
 from llm_audit.types import ProbeResult
 
-
 _INJECTION_PAYLOADS: list[tuple[str, str]] = [
     (
         "ignore_system",
@@ -71,7 +70,10 @@ class PromptInjectionProbe(BaseProbe):
                 passed=False,
                 confidence=confidence,
                 severity=severity,
-                reason=f"{len(triggered)}/{len(_INJECTION_PAYLOADS)} injection payloads triggered a detectable response.",
+                reason=(
+                    f"{len(triggered)}/{len(_INJECTION_PAYLOADS)} injection "
+                    "payloads triggered a detectable response."
+                ),
                 evidence="\n".join(triggered),
                 recommendation=(
                     "Harden the system prompt with explicit anti-injection instructions. "
