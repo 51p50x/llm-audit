@@ -1,0 +1,109 @@
+name: LLM Security Audit
+
+on:
+  workflow_dispatch:
+    inputs:
+      endpoint:
+        description: "LLM endpoint URL (OpenAI-compatible)"
+        required: true
+        default: "https://api.openai.com/v1/chat/completions"
+      model:
+        description: "Model name (e.g. gpt-4o, llama3.2)"
+        required: true
+        default: "gpt-4o-mini"
+      probes:
+        description: "Probe group to run (injection, jailbreak, leakage, output, dos, agency) or leave empty for all"
+        required: false
+        default: ""
+      concurrency:
+        description: "Max parallel probes (use 1 for slow local models)"
+        required: false
+        default: "3"
+      timeout:
+        description: "Request timeout in seconds"
+        required: false
+        default: "60"
+  schedule:
+    - cron: "0 6 * * 1"  # Every Monday at 06:00 UTC
+
+jobs:
+  audit:
+    name: OWASP LLM Top 10 Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install llm-audit
+        run: pip install -e .
+
+      - name: Run audit
+        env:
+          LLM_AUDIT_API_KEY: ${{ secrets.LLM_AUDIT_API_KEY }}
+        run: |
+          ARGS="${{ github.event.inputs.endpoint || 'https://api.openai.com/v1/chat/completions' }}"
+          ARGS="$ARGS --model ${{ github.event.inputs.model || 'gpt-4o-mini' }}"
+          ARGS="$ARGS --timeout ${{ github.event.inputs.timeout || '60' }}"
+          ARGS="$ARGS --concurrency ${{ github.event.inputs.concurrency || '3' }}"
+          ARGS="$ARGS --format json"
+          ARGS="$ARGS --output audit-report.json"
+
+          if [ -n "${{ github.event.inputs.probes }}" ]; then
+            ARGS="$ARGS --only ${{ github.event.inputs.probes }}"
+          fi
+
+          llm-audit audit $ARGS || true
+
+      - name: Print summary
+        if: always()
+        run: |
+          if [ -f audit-report.json ]; then
+            echo "### Audit Summary" >> $GITHUB_STEP_SUMMARY
+            echo '```json' >> $GITHUB_STEP_SUMMARY
+            python -c "
+          import json, sys
+          with open('audit-report.json') as f:
+              r = json.load(f)
+          s = r['summary']
+          print(json.dumps({
+              'endpoint': r['endpoint'],
+              'model': r['model'],
+              'timestamp': r['timestamp'],
+              'total': s['total'],
+              'passed': s['passed'],
+              'failed': s['failed'],
+              'by_severity': s.get('by_severity', {}),
+          }, indent=2))
+          " >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-report-${{ github.run_id }}
+          path: audit-report.json
+          retention-days: 30
+
+      - name: Fail if CRITICAL findings
+        run: |
+          if [ -f audit-report.json ]; then
+            CRITICAL=$(python -c "
+          import json
+          with open('audit-report.json') as f:
+              r = json.load(f)
+          print(r['summary'].get('by_severity', {}).get('CRITICAL', 0))
+          ")
+            echo "CRITICAL findings: $CRITICAL"
+            if [ "$CRITICAL" -gt "0" ]; then
+              echo "::error::Audit found $CRITICAL CRITICAL severity finding(s). Review the audit report."
+              exit 1
+            fi
+          fi

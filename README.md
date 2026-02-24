@@ -1,5 +1,7 @@
 # llm-audit
 
+[![CI](https://github.com/51p50x/llm-audit/actions/workflows/ci.yml/badge.svg)](https://github.com/51p50x/llm-audit/actions/workflows/ci.yml)
+
 CLI tool to audit LLM endpoints against the [OWASP LLM Top 10](https://owasp.org/www-project-top-10-for-large-language-model-applications/).
 
 ## Covered vulnerabilities
