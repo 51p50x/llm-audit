@@ -14,6 +14,7 @@ from llm_audit.probes.insecure_output import InsecureOutputProbe
 from llm_audit.probes.training_data_extraction import TrainingDataExtractionProbe
 from llm_audit.probes.model_dos import ModelDoSProbe, _SLOW_RESPONSE_THRESHOLD_S
 from llm_audit.probes.excessive_agency import ExcessiveAgencyProbe
+from llm_audit.probes.base import _resolve_dot_path, _render_template
 from llm_audit.exceptions import EndpointAuthError, EndpointConnectionError
 
 from tests.conftest import make_config, make_llm_response
@@ -462,6 +463,56 @@ async def test_excessive_agency_pass_concern_without_compliance(httpx_mock: HTTP
         )
 
     probe = ExcessiveAgencyProbe(make_config())
+    async with httpx.AsyncClient() as client:
+        result = await probe.run(client)
+
+    assert result["passed"] is True
+
+
+# ---------------------------------------------------------------------------
+# Custom payload adapter helpers
+# ---------------------------------------------------------------------------
+
+
+def test_resolve_dot_path_simple() -> None:
+    data = {"data": {"reply": {"text": "hello world"}}}
+    assert _resolve_dot_path(data, "data.reply.text") == "hello world"
+
+
+def test_resolve_dot_path_list_index() -> None:
+    data = {"results": [{"output": "first"}, {"output": "second"}]}
+    assert _resolve_dot_path(data, "results.0.output") == "first"
+    assert _resolve_dot_path(data, "results.1.output") == "second"
+
+
+def test_resolve_dot_path_missing_key() -> None:
+    data = {"data": {"reply": "hi"}}
+    assert _resolve_dot_path(data, "data.missing.field") == ""
+
+
+def test_render_template_basic() -> None:
+    template = '{"query": "{message}", "ctx": "{system_prompt}", "m": "{model}"}'
+    result = _render_template(template, message="hello", system_prompt="be nice", model="gpt-4")
+    assert result == {"query": "hello", "ctx": "be nice", "m": "gpt-4"}
+
+
+def test_render_template_escapes_quotes() -> None:
+    template = '{"query": "{message}"}'
+    result = _render_template(template, message='say "hello"', system_prompt="", model="")
+    assert result["query"] == 'say "hello"'
+
+
+@pytest.mark.asyncio
+async def test_custom_template_end_to_end(httpx_mock: HTTPXMock) -> None:
+    custom_response = {"data": {"reply": {"text": "I refuse to do that. I cannot help."}}}
+    for _ in range(4):
+        httpx_mock.add_response(url=ENDPOINT, json=custom_response)
+
+    config = make_config(
+        request_template='{"query": "{message}", "context": "{system_prompt}"}',
+        response_path="data.reply.text",
+    )
+    probe = PromptInjectionProbe(config)
     async with httpx.AsyncClient() as client:
         result = await probe.run(client)
 

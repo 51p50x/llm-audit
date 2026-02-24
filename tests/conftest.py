@@ -20,6 +20,8 @@ def make_config(**overrides: object) -> AuditConfig:
         output_format="rich",
         output_file=None,
         concurrency=2,
+        request_template=None,
+        response_path=None,
         verbose=False,
     )
     base.update(overrides)  # type: ignore[typeddict-item]

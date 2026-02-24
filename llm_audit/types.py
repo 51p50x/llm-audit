@@ -30,6 +30,8 @@ class AuditConfig(TypedDict):
     output_format: Literal["rich", "json"]
     output_file: str | None
     concurrency: int
+    request_template: str | None
+    response_path: str | None
     verbose: bool
 
 

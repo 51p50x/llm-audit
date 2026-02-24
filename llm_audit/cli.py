@@ -141,6 +141,29 @@ def audit(
             max=10,
         ),
     ] = 2,
+    request_template: Annotated[
+        Optional[str],
+        typer.Option(
+            "--request-template",
+            help=(
+                "Custom JSON request template. Use {message}, {system_prompt}, {model} as placeholders. "
+                "Example: '{\"query\": \"{message}\", \"context\": \"{system_prompt}\"}'"
+            ),
+            show_default=False,
+        ),
+    ] = None,
+    response_path: Annotated[
+        Optional[str],
+        typer.Option(
+            "--response-path",
+            help=(
+                "Dot-notation path to extract text from the response JSON. "
+                "Example: 'data.reply.text' or 'result.0.output'. "
+                "Default: OpenAI format (choices.0.message.content)."
+            ),
+            show_default=False,
+        ),
+    ] = None,
     output_format: Annotated[
         str,
         typer.Option(
@@ -191,6 +214,8 @@ def audit(
         output_format=output_format,  # type: ignore[arg-type]
         output_file=output_file,
         concurrency=concurrency,
+        request_template=request_template,
+        response_path=response_path,
         verbose=verbose,
     )
 

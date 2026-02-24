@@ -66,6 +66,38 @@ llm-audit audit http://localhost:11434/v1/chat/completions --model llama3 --verb
 llm-audit list-probes
 ```
 
+## Custom (non-OpenAI) endpoints
+
+For APIs that don't follow the OpenAI chat completions format, use `--request-template` and `--response-path`:
+
+```bash
+# Custom request body — use {message}, {system_prompt}, {model} as placeholders
+llm-audit audit https://api.custom.com/chat \
+  --model my-model \
+  --request-template '{"query": "{message}", "context": "{system_prompt}", "options": {"model": "{model}"}}' \
+  --response-path "data.reply.text"
+
+# Azure OpenAI (different response structure)
+llm-audit audit https://my-instance.openai.azure.com/openai/deployments/gpt-4/chat/completions?api-version=2024-02 \
+  --auth "api-key YOUR_AZURE_KEY" \
+  --response-path "choices.0.message.content"
+
+# Simple wrapper API that takes a flat query
+llm-audit audit https://internal-llm.company.com/api/ask \
+  --request-template '{"prompt": "{message}", "session_id": "audit"}' \
+  --response-path "response"
+```
+
+**Placeholders:**
+
+| Placeholder | Replaced with |
+|---|---|
+| `{message}` | The probe's user message |
+| `{system_prompt}` | The `--system-prompt` value (empty string if not set) |
+| `{model}` | The `--model` value (empty string if not set) |
+
+**Response path:** dot-notation to traverse the JSON response. Supports dict keys and list indices (e.g. `results.0.text`).
+
 ## Probe groups (`--only`)
 
 | Group | Probes included |

@@ -1,11 +1,44 @@
 """Abstract base class for all llm-audit probes."""
 
+from __future__ import annotations
+
+import json
 from abc import ABC, abstractmethod
+from typing import Any
 
 import httpx
 
 from llm_audit.types import AuditConfig, LLMRequestPayload, LLMResponse, ProbeResult
 from llm_audit.exceptions import EndpointAuthError, EndpointConnectionError, EndpointResponseError
+
+
+def _resolve_dot_path(data: Any, path: str) -> str:
+    """Traverse *data* using a dot-separated *path* and return the leaf as a string.
+
+    Supports dict keys and integer list indices, e.g. ``"data.choices.0.text"``.
+    Returns ``""`` if the path cannot be resolved.
+    """
+    current = data
+    for segment in path.split("."):
+        try:
+            if isinstance(current, list):
+                current = current[int(segment)]
+            else:
+                current = current[segment]
+        except (KeyError, IndexError, TypeError, ValueError):
+            return ""
+    return str(current) if current is not None else ""
+
+
+def _render_template(template: str, *, message: str, system_prompt: str, model: str) -> dict[str, Any]:
+    """Replace ``{message}``, ``{system_prompt}``, ``{model}`` in *template* and parse as JSON."""
+    rendered = (
+        template
+        .replace("{message}", json.dumps(message)[1:-1])        # escape for JSON string
+        .replace("{system_prompt}", json.dumps(system_prompt)[1:-1])
+        .replace("{model}", json.dumps(model)[1:-1])
+    )
+    return json.loads(rendered)  # type: ignore[no-any-return]
 
 
 class BaseProbe(ABC):
@@ -40,13 +73,27 @@ class BaseProbe(ABC):
             EndpointAuthError: HTTP 401/403 response.
             EndpointResponseError: Any other non-2xx response.
         """
-        payload: LLMRequestPayload = {"messages": messages}
+        request_template = self.config.get("request_template")
 
-        if self.config.get("model"):
-            payload["model"] = self.config["model"]  # type: ignore[assignment]
-
-        if extra:
-            payload.update(extra)  # type: ignore[typeddict-item]
+        if request_template:
+            user_msg = next(
+                (m["content"] for m in reversed(messages) if m["role"] == "user"), ""
+            )
+            sys_msg = next(
+                (m["content"] for m in messages if m["role"] == "system"), ""
+            )
+            payload_any: dict[str, Any] = _render_template(
+                request_template,
+                message=user_msg,
+                system_prompt=sys_msg,
+                model=self.config.get("model") or "",
+            )
+        else:
+            payload_any = {"messages": messages}
+            if self.config.get("model"):
+                payload_any["model"] = self.config["model"]
+            if extra:
+                payload_any.update(extra)
 
         headers: dict[str, str] = {"Content-Type": "application/json"}
         if self.config.get("auth_header"):
@@ -57,7 +104,7 @@ class BaseProbe(ABC):
         try:
             response = await client.post(
                 self.config["endpoint"],
-                json=payload,
+                json=payload_any,
                 headers=headers,
                 timeout=self.config["timeout"],
             )
@@ -78,10 +125,16 @@ class BaseProbe(ABC):
 
         return response.json()  # type: ignore[no-any-return]
 
-    @staticmethod
-    def _extract_text(response: LLMResponse) -> str:
-        """Pull the assistant message text from a chat-completion response."""
+    def _extract_text(self, response: LLMResponse | dict[str, Any]) -> str:
+        """Pull the assistant message text from a response.
+
+        Uses ``config["response_path"]`` (dot-notation) when set,
+        otherwise falls back to the standard OpenAI path.
+        """
+        response_path = self.config.get("response_path")
+        if response_path:
+            return _resolve_dot_path(response, response_path)
         try:
-            return response["choices"][0]["message"]["content"]
-        except (KeyError, IndexError):
+            return response["choices"][0]["message"]["content"]  # type: ignore[index]
+        except (KeyError, IndexError, TypeError):
             return ""
