@@ -54,11 +54,17 @@ jobs:
           ARGS="$ARGS --format json"
           ARGS="$ARGS --output audit-report.json"
 
-          if [ -n "${{ github.event.inputs.probes }}" ]; then
-            ARGS="$ARGS --only ${{ github.event.inputs.probes }}"
-          fi
-
           llm-audit audit $ARGS || true
+
+          # Also generate HTML report
+          llm-audit audit \
+            ${{ github.event.inputs.endpoint || 'https://api.openai.com/v1/chat/completions' }} \
+            --model ${{ github.event.inputs.model || 'gpt-4o-mini' }} \
+            --timeout ${{ github.event.inputs.timeout || '60' }} \
+            --concurrency ${{ github.event.inputs.concurrency || '3' }} \
+            --format html \
+            --output audit-report.html \
+            $([ -n "${{ github.event.inputs.probes }}" ] && echo "--only ${{ github.event.inputs.probes }}") || true
 
       - name: Print summary
         if: always()
@@ -84,12 +90,14 @@ jobs:
             echo '```' >> $GITHUB_STEP_SUMMARY
           fi
 
-      - name: Upload audit report
+      - name: Upload audit reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: audit-report-${{ github.run_id }}
-          path: audit-report.json
+          path: |
+            audit-report.json
+            audit-report.html
           retention-days: 30
 
       - name: Fail if CRITICAL findings

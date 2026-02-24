@@ -13,6 +13,7 @@ from rich.console import Console
 from llm_audit import __version__
 from llm_audit.exceptions import LLMAuditError
 from llm_audit.probes import ALL_PROBES
+from llm_audit.html_reporter import render_html
 from llm_audit.reporter import render_error, render_json, render_report
 from llm_audit.runner import run_audit
 from llm_audit.types import AuditConfig, PROBE_GROUPS
@@ -144,7 +145,7 @@ def audit(
         str,
         typer.Option(
             "--format", "-f",
-            help="Output format: 'rich' (default) or 'json'.",
+            help="Output format: 'rich' (default), 'json', or 'html'.",
         ),
     ] = "rich",
     verbose: Annotated[
@@ -163,8 +164,8 @@ def audit(
       llm-audit audit http://localhost:11434/v1/chat/completions --model llama3
       llm-audit audit https://my-llm.example.com/chat --probes prompt_injection,jailbreak
     """
-    if output_format not in ("rich", "json"):
-        render_error(f"Invalid format '{output_format}'. Choose 'rich' or 'json'.")
+    if output_format not in ("rich", "json", "html"):
+        render_error(f"Invalid format '{output_format}'. Choose 'rich', 'json', or 'html'.")
         raise typer.Exit(code=1)
 
     if only is not None:
@@ -207,11 +208,15 @@ def audit(
         with path.open("w", encoding="utf-8") as fh:
             if output_format == "json":
                 render_json(report, output=fh)
+            elif output_format == "html":
+                render_html(report, output=fh)
             else:
                 render_report(report, verbose=verbose, output=fh)
         console.print(f"[dim]Report saved to[/dim] [bold cyan]{path.resolve()}[/bold cyan]")
     elif output_format == "json":
         render_json(report)
+    elif output_format == "html":
+        render_html(report)
     else:
         render_report(report, verbose=verbose)
 
