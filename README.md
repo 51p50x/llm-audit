@@ -7,7 +7,33 @@
 
 **Automated security testing for Large Language Models.** Audit any LLM endpoint (OpenAI, Ollama, Azure, custom APIs) against the [OWASP LLM Top 10](https://owasp.org/www-project-top-10-for-large-language-model-applications/) vulnerabilities. Detects prompt injection, jailbreaks, data leakage, insecure output, denial of service, and excessive agency — with severity scoring, confidence levels, and CI/CD integration.
 
-> **Keywords:** LLM security, AI red teaming, prompt injection detection, LLM penetration testing, OWASP Top 10 LLM, AI security audit, ChatGPT security, LLM vulnerability scanner, AI safety testing, adversarial AI testing
+<!-- Keywords: LLM security, AI red teaming, prompt injection detection, LLM penetration testing, OWASP Top 10 LLM, AI security audit, ChatGPT security, LLM vulnerability scanner, AI safety testing, adversarial AI testing -->
+
+## Table of contents
+
+- [Covered vulnerabilities](#covered-vulnerabilities)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Quick start](#quick-start)
+- [Usage examples](#usage-examples)
+- [CLI reference](#cli-reference)
+- [Environment variables](#environment-variables)
+- [Output formats](#output-formats)
+- [Severity and confidence](#severity-and-confidence)
+- [Custom (non-OpenAI) endpoints](#custom-non-openai-endpoints)
+- [Probe groups](#probe-groups---only)
+- [Exit codes](#exit-codes)
+- [Project structure](#project-structure)
+- [CI/CD Pipeline Integration](#cicd-pipeline-integration)
+  - [GitHub Actions](#github-actions)
+  - [GitLab CI](#gitlab-ci)
+  - [Azure DevOps](#azure-devops-pipelines)
+  - [Bitbucket Pipelines](#bitbucket-pipelines)
+  - [Jenkins](#jenkins-declarative-pipeline)
+  - [Docker](#docker-standalone)
+- [Development](#development)
+- [Limitations & scope](#limitations--scope)
+- [Support this project](#support-this-project)
 
 ## Covered vulnerabilities
 
