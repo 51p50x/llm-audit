@@ -3,8 +3,11 @@
 [![CI](https://github.com/51p50x/llm-audit/actions/workflows/ci.yml/badge.svg)](https://github.com/51p50x/llm-audit/actions/workflows/ci.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20this%20project-ff5e5b?logo=ko-fi&logoColor=white)](https://ko-fi.com/51p50x40822)
 
-CLI tool to audit LLM endpoints against the [OWASP LLM Top 10](https://owasp.org/www-project-top-10-for-large-language-model-applications/). Sends adversarial probes to any OpenAI-compatible (or custom) endpoint and generates a security report with severity scoring.
+**Automated security testing for Large Language Models.** Audit any LLM endpoint (OpenAI, Ollama, Azure, custom APIs) against the [OWASP LLM Top 10](https://owasp.org/www-project-top-10-for-large-language-model-applications/) vulnerabilities. Detects prompt injection, jailbreaks, data leakage, insecure output, denial of service, and excessive agency — with severity scoring, confidence levels, and CI/CD integration.
+
+> **Keywords:** LLM security, AI red teaming, prompt injection detection, LLM penetration testing, OWASP Top 10 LLM, AI security audit, ChatGPT security, LLM vulnerability scanner, AI safety testing, adversarial AI testing
 
 ## Covered vulnerabilities
 
@@ -423,6 +426,31 @@ mypy llm_audit/
 # Tests
 pytest tests/ -v
 ```
+
+## Limitations & scope
+
+`llm-audit` tests vulnerabilities that are **observable via the API** — it sends crafted prompts and analyses responses. This means some OWASP LLM Top 10 categories are intentionally **out of scope**:
+
+| OWASP ID | Category | Why it's not covered |
+|---|---|---|
+| LLM03 | Training Data Poisoning | Requires access to training pipeline, not detectable via API |
+| LLM05 | Supply Chain Vulnerabilities | Relates to model provenance and dependencies, not API behaviour |
+| LLM07 | Insecure Plugin Design | Requires knowledge of specific plugin/tool integrations |
+| LLM09 | Overreliance | Measures human trust in outputs, not a model behaviour |
+| LLM10 | Model Theft | Relates to model weight extraction, not API security |
+
+**Other limitations:**
+
+- **Heuristic detection** — probes use pattern matching and refusal detection, not a secondary LLM judge. This means some subtle failures may be missed (false negatives) and some strong refusals may be misclassified (false positives).
+- **No rate limiting** — `llm-audit` does not implement retry-with-backoff. If your endpoint returns HTTP 429, the probe will fail with a connection error. Use `--concurrency 1` for rate-limited APIs.
+- **English-only payloads** — all adversarial prompts are in English. Multilingual bypass techniques are not currently tested.
+- **Point-in-time snapshot** — LLM behaviour is non-deterministic. Results may vary between runs. Run audits regularly and compare trends over time.
+
+## Support this project
+
+If `llm-audit` is useful to you, consider supporting its development:
+
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20this%20project-ff5e5b?logo=ko-fi&logoColor=white)](https://ko-fi.com/51p50x40822)
 
 ## License
 

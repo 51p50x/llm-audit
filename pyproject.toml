@@ -5,10 +5,29 @@ build-backend = "hatchling.build"
 [project]
 name = "llm-audit"
 version = "0.1.0"
-description = "CLI tool to audit LLM endpoints against OWASP LLM Top 10"
+description = "Automated security testing for LLM endpoints — OWASP Top 10 vulnerability scanner with CI/CD integration"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
+keywords = [
+    "llm", "security", "audit", "owasp", "prompt-injection",
+    "jailbreak", "red-teaming", "ai-safety", "penetration-testing",
+    "vulnerability-scanner", "chatgpt", "openai", "ollama",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+    "Topic :: Software Development :: Testing",
+    "Typing :: Typed",
+]
+
 dependencies = [
     "typer[all]>=0.12.0",
     "httpx>=0.27.0",
@@ -18,6 +37,12 @@ dependencies = [
 
 [project.scripts]
 llm-audit = "llm_audit.cli:app"
+
+[project.urls]
+Homepage = "https://github.com/51p50x/llm-audit"
+Repository = "https://github.com/51p50x/llm-audit"
+Issues = "https://github.com/51p50x/llm-audit/issues"
+"Ko-fi" = "https://ko-fi.com/51p50x40822"
 
 [project.optional-dependencies]
 dev = [
