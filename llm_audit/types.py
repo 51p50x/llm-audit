@@ -60,9 +60,16 @@ class LLMResponse(TypedDict):
 PROBE_GROUPS: Final[dict[str, list[str]]] = {
     "injection": ["prompt_injection", "indirect_injection"],
     "jailbreak": ["jailbreak"],
-    "leakage": ["data_leakage"],
+    "leakage": ["data_leakage", "training_data_extraction"],
     "output": ["insecure_output"],
-    "all": ["prompt_injection", "indirect_injection", "jailbreak", "data_leakage", "insecure_output"],
+    "all": [
+        "prompt_injection",
+        "indirect_injection",
+        "jailbreak",
+        "data_leakage",
+        "insecure_output",
+        "training_data_extraction",
+    ],
 }
 
 

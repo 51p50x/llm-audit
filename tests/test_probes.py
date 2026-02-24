@@ -11,6 +11,7 @@ from llm_audit.probes.indirect_injection import IndirectInjectionProbe
 from llm_audit.probes.jailbreak import JailbreakProbe
 from llm_audit.probes.data_leakage import DataLeakageProbe
 from llm_audit.probes.insecure_output import InsecureOutputProbe
+from llm_audit.probes.training_data_extraction import TrainingDataExtractionProbe
 from llm_audit.exceptions import EndpointAuthError, EndpointConnectionError
 
 from tests.conftest import make_config, make_llm_response
@@ -239,3 +240,90 @@ async def test_send_raises_connection_error(httpx_mock: HTTPXMock) -> None:
     async with httpx.AsyncClient() as client:
         with pytest.raises(EndpointConnectionError):
             await probe._send(client, [{"role": "user", "content": "hello"}])
+
+
+# ---------------------------------------------------------------------------
+# TrainingDataExtractionProbe
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_training_data_extraction_pass(httpx_mock: HTTPXMock) -> None:
+    for _ in range(8):
+        httpx_mock.add_response(
+            url=ENDPOINT,
+            json=make_llm_response(
+                "I cannot reproduce verbatim text from my training data. "
+                "I don't retain or store specific training examples."
+            ),
+        )
+
+    probe = TrainingDataExtractionProbe(make_config())
+    async with httpx.AsyncClient() as client:
+        result = await probe.run(client)
+
+    assert result["passed"] is True
+
+
+@pytest.mark.asyncio
+async def test_training_data_extraction_fail_memorisation(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url=ENDPOINT,
+        json=make_llm_response(
+            "Sure! Here is the verbatim text from my training data: "
+            "'Four score and seven years ago our fathers brought forth on this continent...'"
+        ),
+    )
+    for _ in range(7):
+        httpx_mock.add_response(
+            url=ENDPOINT,
+            json=make_llm_response("I cannot reproduce training data verbatim."),
+        )
+
+    probe = TrainingDataExtractionProbe(make_config())
+    async with httpx.AsyncClient() as client:
+        result = await probe.run(client)
+
+    assert result["passed"] is False
+    assert "verbatim" in result["evidence"].lower()
+
+
+@pytest.mark.asyncio
+async def test_training_data_extraction_fail_pii(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url=ENDPOINT,
+        json=make_llm_response(
+            "Based on my training data, the email is john.doe@example.com "
+            "and the phone is 555-123-4567."
+        ),
+    )
+    for _ in range(7):
+        httpx_mock.add_response(
+            url=ENDPOINT,
+            json=make_llm_response("I cannot share personal information."),
+        )
+
+    probe = TrainingDataExtractionProbe(make_config())
+    async with httpx.AsyncClient() as client:
+        result = await probe.run(client)
+
+    assert result["passed"] is False
+    assert "pii_pattern" in result["evidence"]
+
+
+@pytest.mark.asyncio
+async def test_training_data_extraction_pass_refusal_with_mention(httpx_mock: HTTPXMock) -> None:
+    for _ in range(8):
+        httpx_mock.add_response(
+            url=ENDPOINT,
+            json=make_llm_response(
+                "I won't reproduce the text 'Four score and seven years ago' verbatim "
+                "as that would be reproducing training data. I cannot do that."
+            ),
+        )
+
+    probe = TrainingDataExtractionProbe(make_config())
+    async with httpx.AsyncClient() as client:
+        result = await probe.run(client)
+
+    assert result["passed"] is True
