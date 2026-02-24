@@ -34,6 +34,7 @@
 - [Development](#development)
 - [Limitations & scope](#limitations--scope)
 - [Support this project](#support-this-project)
+- [Contact](#contact)
 
 ## Covered vulnerabilities
 
@@ -477,6 +478,14 @@ pytest tests/ -v
 If `llm-audit` is useful to you, consider supporting its development:
 
 [![Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20this%20project-ff5e5b?logo=ko-fi&logoColor=white)](https://ko-fi.com/51p50x40822)
+
+## Contact
+
+Need a **custom security audit** for your LLM-powered product? Looking for help integrating `llm-audit` into your CI/CD pipeline, or interested in collaborating on new probes?
+
+Reach out: **51plog50 [at] gmail [dot] com**
+
+I'm available for consulting, implementation support, and tailored adversarial testing engagements.
 
 ## License
 
