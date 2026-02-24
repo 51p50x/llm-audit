@@ -71,6 +71,20 @@ def _render_header(out: Console, report: AuditReport) -> None:
     out.print()
 
 
+_SEVERITY_STYLE: dict[str, str] = {
+    "CRITICAL": "bold red",
+    "HIGH": "red",
+    "MEDIUM": "yellow",
+    "INFO": "dim",
+}
+
+_CONFIDENCE_STYLE: dict[str, str] = {
+    "HIGH": "green",
+    "MEDIUM": "yellow",
+    "LOW": "dim",
+}
+
+
 def _render_probe_panel(
     out: Console, probe_name: str, result: ProbeResult, *, verbose: bool
 ) -> None:
@@ -78,9 +92,16 @@ def _render_probe_panel(
     status_icon = "[bold green]✔ PASS[/bold green]" if passed else "[bold red]✘ FAIL[/bold red]"
     border = "green" if passed else "red"
 
+    severity = result.get("severity", "INFO")
+    confidence = result.get("confidence", "HIGH")
+    sev_style = _SEVERITY_STYLE.get(severity, "dim")
+    conf_style = _CONFIDENCE_STYLE.get(confidence, "dim")
+
     body_parts: list[str] = [
-        f"[bold]Status[/bold]  : {status_icon}",
-        f"[bold]Reason[/bold]  : {result['reason']}",
+        f"[bold]Status[/bold]     : {status_icon}",
+        f"[bold]Severity[/bold]   : [{sev_style}]{severity}[/{sev_style}]",
+        f"[bold]Confidence[/bold] : [{conf_style}]{confidence}[/{conf_style}]",
+        f"[bold]Reason[/bold]     : {result['reason']}",
     ]
 
     if not passed or verbose:
@@ -114,8 +135,17 @@ def _render_summary(out: Console, report: AuditReport) -> None:
     table.add_row("[green]Passed[/green]", f"[green]{passed}[/green]")
     table.add_row("[red]Failed[/red]", f"[red]{failed}[/red]")
 
+    by_severity = summary.get("by_severity", {})
+    if isinstance(by_severity, dict) and any(v for v in by_severity.values()):
+        table.add_section()
+        for sev, style in [("CRITICAL", "bold red"), ("HIGH", "red"), ("MEDIUM", "yellow"), ("INFO", "dim")]:
+            count = by_severity.get(sev, 0)
+            if count:
+                table.add_row(f"[{style}]{sev}[/{style}]", f"[{style}]{count}[/{style}]")
+
     score_pct = int((passed / total) * 100) if total else 0
     score_style = "green" if score_pct == 100 else ("yellow" if score_pct >= 60 else "red")
+    table.add_section()
     table.add_row("Security score", f"[{score_style}]{score_pct}%[/{score_style}]")
 
     verdict = (

@@ -2,11 +2,16 @@
 
 from typing import Any, Final, Literal, TypedDict
 
+Confidence = Literal["HIGH", "MEDIUM", "LOW"]
+Severity = Literal["CRITICAL", "HIGH", "MEDIUM", "INFO"]
+
 
 class ProbeResult(TypedDict):
     """Standard result returned by every probe."""
 
     passed: bool
+    confidence: Confidence
+    severity: Severity
     reason: str
     evidence: str
     recommendation: str
@@ -84,4 +89,4 @@ class AuditReport(TypedDict):
     model: str | None
     timestamp: str
     results: dict[str, ProbeResult]
-    summary: dict[str, int]
+    summary: dict[str, int | dict[str, int]]

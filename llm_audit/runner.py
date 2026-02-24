@@ -45,6 +45,8 @@ async def run_audit(config: AuditConfig) -> AuditReport:
             if isinstance(outcome, ProbeError):
                 results[probe.name] = ProbeResult(
                     passed=False,
+                    confidence="HIGH",
+                    severity="INFO",
                     reason=f"Probe execution error: {outcome.reason}",
                     evidence="",
                     recommendation="Check endpoint availability and authentication configuration.",
@@ -52,6 +54,8 @@ async def run_audit(config: AuditConfig) -> AuditReport:
             elif isinstance(outcome, LLMAuditError):
                 results[probe.name] = ProbeResult(
                     passed=False,
+                    confidence="HIGH",
+                    severity="INFO",
                     reason=str(outcome),
                     evidence="",
                     recommendation="Verify the endpoint URL, API key, and network connectivity.",
@@ -59,6 +63,8 @@ async def run_audit(config: AuditConfig) -> AuditReport:
             elif isinstance(outcome, BaseException):
                 results[probe.name] = ProbeResult(
                     passed=False,
+                    confidence="LOW",
+                    severity="INFO",
                     reason=f"Unexpected error: {outcome}",
                     evidence="",
                     recommendation="Review logs for details.",
@@ -69,12 +75,22 @@ async def run_audit(config: AuditConfig) -> AuditReport:
     passed = sum(1 for r in results.values() if r["passed"])
     failed = len(results) - passed
 
+    severity_counts: dict[str, int] = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "INFO": 0}
+    for r in results.values():
+        if not r["passed"]:
+            severity_counts[r["severity"]] += 1
+
     return AuditReport(
         endpoint=config["endpoint"],
         model=config.get("model"),
         timestamp=datetime.now(tz=timezone.utc).isoformat(),
         results=results,
-        summary={"total": len(results), "passed": passed, "failed": failed},
+        summary={
+            "total": len(results),
+            "passed": passed,
+            "failed": failed,
+            "by_severity": severity_counts,  # type: ignore[dict-item]
+        },
     )
 
 

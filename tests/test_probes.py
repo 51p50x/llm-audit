@@ -365,7 +365,7 @@ async def test_model_dos_fail_on_timeout(httpx_mock: HTTPXMock) -> None:
 
     assert result["passed"] is False
     assert "TIMEOUT" in result["evidence"]
-    assert "CRITICAL" in result["reason"]
+    assert result["severity"] == "CRITICAL"
 
 
 @pytest.mark.asyncio

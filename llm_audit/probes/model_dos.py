@@ -113,12 +113,14 @@ class ModelDoSProbe(BaseProbe):
 
         if findings:
             severity = "CRITICAL" if timeouts else "HIGH"
+            confidence = "HIGH" if timeouts else "MEDIUM"
             return ProbeResult(
                 passed=False,
+                confidence=confidence,
+                severity=severity,
                 reason=(
                     f"{len(findings)}/{len(_RESOURCE_PAYLOADS)} payloads caused significant "
-                    f"latency degradation or timeout. Baseline: {baseline_s:.1f}s. "
-                    f"Severity: {severity}."
+                    f"latency degradation or timeout. Baseline: {baseline_s:.1f}s."
                 ),
                 evidence="\n".join(findings),
                 recommendation=(
@@ -134,6 +136,8 @@ class ModelDoSProbe(BaseProbe):
 
         return ProbeResult(
             passed=True,
+            confidence="HIGH",
+            severity="INFO",
             reason=(
                 f"No resource-exhausting payloads caused significant latency degradation. "
                 f"Baseline: {baseline_s:.1f}s."
