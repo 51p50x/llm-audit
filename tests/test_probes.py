@@ -500,6 +500,176 @@ def test_render_template_escapes_quotes() -> None:
     assert result["query"] == 'say "hello"'
 
 
+# ---------------------------------------------------------------------------
+# Edge cases: retries, invalid JSON, empty responses, auth_header
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_send_retries_on_429(httpx_mock: HTTPXMock) -> None:
+    """HTTP 429 should be retried up to 3 times with backoff."""
+    httpx_mock.add_response(url=ENDPOINT, status_code=429)
+    httpx_mock.add_response(url=ENDPOINT, status_code=429)
+    httpx_mock.add_response(
+        url=ENDPOINT,
+        json=make_llm_response("OK after retry"),
+    )
+
+    probe = PromptInjectionProbe(make_config())
+    async with httpx.AsyncClient() as client:
+        result = await probe._send(client, [{"role": "user", "content": "hello"}])
+
+    assert result["choices"][0]["message"]["content"] == "OK after retry"
+
+
+@pytest.mark.asyncio
+async def test_send_retries_on_500(httpx_mock: HTTPXMock) -> None:
+    """HTTP 500 should be retried."""
+    httpx_mock.add_response(url=ENDPOINT, status_code=500, text="Internal error")
+    httpx_mock.add_response(
+        url=ENDPOINT,
+        json=make_llm_response("OK after 500 retry"),
+    )
+
+    probe = PromptInjectionProbe(make_config())
+    async with httpx.AsyncClient() as client:
+        result = await probe._send(client, [{"role": "user", "content": "hello"}])
+
+    assert result["choices"][0]["message"]["content"] == "OK after 500 retry"
+
+
+@pytest.mark.asyncio
+async def test_send_exhausts_retries_on_429(httpx_mock: HTTPXMock) -> None:
+    """After exhausting retries on 429, should raise EndpointResponseError."""
+    from llm_audit.exceptions import EndpointResponseError
+
+    for _ in range(4):  # 1 initial + 3 retries
+        httpx_mock.add_response(url=ENDPOINT, status_code=429, text="rate limited")
+
+    probe = PromptInjectionProbe(make_config())
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(EndpointResponseError, match="429"):
+            await probe._send(client, [{"role": "user", "content": "hello"}])
+
+
+@pytest.mark.asyncio
+async def test_send_respects_retry_after_header(httpx_mock: HTTPXMock) -> None:
+    """Should respect Retry-After header when present."""
+    httpx_mock.add_response(
+        url=ENDPOINT,
+        status_code=429,
+        headers={"Retry-After": "1"},
+    )
+    httpx_mock.add_response(
+        url=ENDPOINT,
+        json=make_llm_response("OK"),
+    )
+
+    probe = PromptInjectionProbe(make_config())
+    async with httpx.AsyncClient() as client:
+        result = await probe._send(client, [{"role": "user", "content": "hello"}])
+
+    assert result["choices"][0]["message"]["content"] == "OK"
+
+
+@pytest.mark.asyncio
+async def test_send_non_2xx_raises_response_error(httpx_mock: HTTPXMock) -> None:
+    """Non-2xx, non-retryable status should raise EndpointResponseError."""
+    from llm_audit.exceptions import EndpointResponseError
+
+    httpx_mock.add_response(url=ENDPOINT, status_code=400, text="Bad request")
+
+    probe = PromptInjectionProbe(make_config())
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(EndpointResponseError, match="400"):
+            await probe._send(client, [{"role": "user", "content": "hello"}])
+
+
+@pytest.mark.asyncio
+async def test_send_403_raises_auth_error(httpx_mock: HTTPXMock) -> None:
+    """HTTP 403 should raise EndpointAuthError."""
+    httpx_mock.add_response(url=ENDPOINT, status_code=403)
+
+    probe = PromptInjectionProbe(make_config())
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(EndpointAuthError) as exc_info:
+            await probe._send(client, [{"role": "user", "content": "hello"}])
+
+    assert exc_info.value.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_send_timeout_raises_connection_error(httpx_mock: HTTPXMock) -> None:
+    """Timeout should raise EndpointConnectionError."""
+    httpx_mock.add_exception(httpx.TimeoutException("Request timed out"))
+
+    probe = PromptInjectionProbe(make_config())
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(EndpointConnectionError, match="timed out"):
+            await probe._send(client, [{"role": "user", "content": "hello"}])
+
+
+@pytest.mark.asyncio
+async def test_send_with_auth_header(httpx_mock: HTTPXMock) -> None:
+    """When auth_header is set, it should be used in Authorization header."""
+    httpx_mock.add_response(
+        url=ENDPOINT,
+        json=make_llm_response("OK"),
+    )
+
+    config = make_config(auth_header="ApiKey my-secret-key")
+    probe = PromptInjectionProbe(config)
+    async with httpx.AsyncClient() as client:
+        await probe._send(client, [{"role": "user", "content": "hello"}])
+
+    request = httpx_mock.get_request()
+    assert request is not None
+    assert request.headers["Authorization"] == "ApiKey my-secret-key"
+
+
+@pytest.mark.asyncio
+async def test_send_with_api_key(httpx_mock: HTTPXMock) -> None:
+    """When api_key is set, should use Bearer token."""
+    httpx_mock.add_response(
+        url=ENDPOINT,
+        json=make_llm_response("OK"),
+    )
+
+    config = make_config(api_key="sk-test123")
+    probe = PromptInjectionProbe(config)
+    async with httpx.AsyncClient() as client:
+        await probe._send(client, [{"role": "user", "content": "hello"}])
+
+    request = httpx_mock.get_request()
+    assert request is not None
+    assert request.headers["Authorization"] == "Bearer sk-test123"
+
+
+@pytest.mark.asyncio
+async def test_extract_text_empty_choices(httpx_mock: HTTPXMock) -> None:
+    """Empty choices should return empty string."""
+    probe = PromptInjectionProbe(make_config())
+    result = probe._extract_text({"choices": []})
+    assert result == ""
+
+
+@pytest.mark.asyncio
+async def test_extract_text_missing_content(httpx_mock: HTTPXMock) -> None:
+    """Missing content key should return empty string."""
+    probe = PromptInjectionProbe(make_config())
+    result = probe._extract_text({"choices": [{"message": {}}]})
+    assert result == ""
+
+
+@pytest.mark.asyncio
+async def test_extract_text_with_response_path(httpx_mock: HTTPXMock) -> None:
+    """Custom response_path should use dot-path resolution."""
+    config = make_config(response_path="data.text")
+    probe = PromptInjectionProbe(config)
+    result = probe._extract_text({"data": {"text": "custom output"}})
+    assert result == "custom output"
+
+
 @pytest.mark.asyncio
 async def test_custom_template_end_to_end(httpx_mock: HTTPXMock) -> None:
     custom_response = {"data": {"reply": {"text": "I refuse to do that. I cannot help."}}}

@@ -4,6 +4,7 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20this%20project-ff5e5b?logo=ko-fi&logoColor=white)](https://ko-fi.com/51p50x40822)
+[![codecov](https://codecov.io/gh/51p50x/llm-audit/branch/main/graph/badge.svg)](https://codecov.io/gh/51p50x/llm-audit)
 
 **Automated security testing for Large Language Models.** Audit any LLM endpoint (OpenAI, Ollama, Azure, custom APIs) against the [OWASP LLM Top 10](https://owasp.org/www-project-top-10-for-large-language-model-applications/) vulnerabilities. Detects prompt injection, jailbreaks, data leakage, insecure output, denial of service, and excessive agency — with severity scoring, confidence levels, and CI/CD integration.
 
