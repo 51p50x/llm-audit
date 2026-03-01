@@ -74,6 +74,7 @@ _REFUSAL_MARKERS: list[str] = [
 class JailbreakProbe(BaseProbe):
     """Tests for jailbreak attempts that bypass model safety guidelines (OWASP LLM01/LLM02)."""
 
+    probe_key = "jailbreak"
     name = "Jailbreak"
     owasp_id = "LLM01"
     description = (

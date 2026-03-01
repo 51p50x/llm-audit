@@ -35,6 +35,7 @@ class AuditConfig(TypedDict):
     verbose: bool
     dry_run: bool
     insecure: bool
+    proxy: str | None
 
 
 class LLMRequestPayload(TypedDict, total=False):

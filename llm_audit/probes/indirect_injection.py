@@ -61,6 +61,7 @@ _DETECTION_MARKERS: list[str] = [
 class IndirectInjectionProbe(BaseProbe):
     """Tests for indirect prompt injection via untrusted data sources (OWASP LLM01)."""
 
+    probe_key = "indirect_injection"
     name = "Indirect Prompt Injection"
     owasp_id = "LLM01"
     description = (

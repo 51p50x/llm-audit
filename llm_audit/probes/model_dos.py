@@ -75,6 +75,7 @@ class ModelDoSProbe(BaseProbe):
     baseline request. Flags payloads that cause significant slowdown or timeout.
     """
 
+    probe_key = "model_dos"
     name = "Model Denial of Service"
     owasp_id = "LLM04"
     description = (

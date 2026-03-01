@@ -53,6 +53,8 @@ def _render_template(
 class BaseProbe(ABC):
     """All probes must inherit from this class and implement `run`."""
 
+    #: Registry key used in CLI ``--probes`` (e.g. ``"prompt_injection"``)
+    probe_key: str = ""
     #: Human-readable name shown in reports
     name: str = ""
     #: OWASP LLM Top 10 category identifier (e.g. "LLM01")
