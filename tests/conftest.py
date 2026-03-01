@@ -21,6 +21,8 @@ def make_config(**overrides: object) -> AuditConfig:
         request_template=None,
         response_path=None,
         verbose=False,
+        dry_run=False,
+        insecure=False,
     )
     base.update(overrides)  # type: ignore[typeddict-item]
     return base

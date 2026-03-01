@@ -3,7 +3,7 @@
 [![CI](https://github.com/51p50x/llm-audit/actions/workflows/ci.yml/badge.svg)](https://github.com/51p50x/llm-audit/actions/workflows/ci.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20this%20project-ff5e5b?logo=ko-fi&logoColor=white)](https://ko-fi.com/51p50x40822)
+[![codecov](https://codecov.io/gh/51p50x/llm-audit/branch/main/graph/badge.svg)](https://codecov.io/gh/51p50x/llm-audit)
 
 **Automated security testing for Large Language Models.** Audit any LLM endpoint (OpenAI, Ollama, Azure, custom APIs) against the [OWASP LLM Top 10](https://owasp.org/www-project-top-10-for-large-language-model-applications/) vulnerabilities. Detects prompt injection, jailbreaks, data leakage, insecure output, denial of service, and excessive agency — with severity scoring, confidence levels, and CI/CD integration.
 
@@ -32,6 +32,7 @@
   - [Jenkins](#jenkins-declarative-pipeline)
   - [Docker](#docker-standalone)
 - [Development](#development)
+- [Roadmap](#roadmap)
 - [Limitations & scope](#limitations--scope)
 - [Support this project](#support-this-project)
 - [Contact](#contact)
@@ -143,6 +144,8 @@ llm-audit audit [OPTIONS] ENDPOINT
 | `--request-template` | | Custom JSON request body (see [Custom endpoints](#custom-non-openai-endpoints)) | `None` |
 | `--response-path` | | Dot-notation path to extract text from response | OpenAI default |
 | `--verbose` | `-v` | Show evidence and recommendations for passing probes | `false` |
+| `--dry-run` | | Validate config and list probes without sending requests | `false` |
+| `--insecure` | | Skip TLS certificate verification (self-signed endpoints) | `false` |
 
 ## Environment variables
 
@@ -454,6 +457,24 @@ mypy llm_audit/
 pytest tests/ -v
 ```
 
+## Roadmap
+
+Planned features for upcoming releases:
+
+| Feature | Status | Target |
+|---|---|---|
+| PyPI publishing (`pip install llm-audit`) | Planned | v0.3.0 |
+| Dynamic probe registry (auto-discover custom probes) | Planned | v0.3.0 |
+| `--proxy` flag for corporate environments | Planned | v0.3.0 |
+| Custom payloads from YAML files | Planned | v0.4.0 |
+| `--runs N` flag for averaging non-deterministic results | Planned | v0.4.0 |
+| Multilingual adversarial payloads | Planned | v0.5.0 |
+| LLM-as-judge mode for reduced false positives | Planned | v0.5.0 |
+| PDF report export | Planned | v0.5.0 |
+| Slack / email notifications on CI failures | Planned | future |
+
+Have a feature request? [Open an issue](https://github.com/51p50x/llm-audit/issues) or reach out in the [Contact](#contact) section.
+
 ## Limitations & scope
 
 `llm-audit` tests vulnerabilities that are **observable via the API** — it sends crafted prompts and analyses responses. This means some OWASP LLM Top 10 categories are intentionally **out of scope**:
@@ -472,12 +493,6 @@ pytest tests/ -v
 - **Basic rate limiting** — `llm-audit` retries on HTTP 429 and 5xx with exponential backoff (up to 3 retries), but does not proactively throttle requests. Use `--concurrency 1` for strictly rate-limited APIs.
 - **English-only payloads** — all adversarial prompts are in English. Multilingual bypass techniques are not currently tested.
 - **Point-in-time snapshot** — LLM behaviour is non-deterministic. Results may vary between runs. Run audits regularly and compare trends over time.
-
-## Support this project
-
-If `llm-audit` is useful to you, consider supporting its development:
-
-[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20this%20project-ff5e5b?logo=ko-fi&logoColor=white)](https://ko-fi.com/51p50x40822)
 
 ## Contact
 

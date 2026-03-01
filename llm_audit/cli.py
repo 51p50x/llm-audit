@@ -178,6 +178,20 @@ def audit(
             help="Show evidence and recommendations even for passing probes.",
         ),
     ] = False,
+    dry_run: Annotated[
+        bool,
+        typer.Option(
+            "--dry-run",
+            help="Validate configuration and list probes that would run, without sending requests.",
+        ),
+    ] = False,
+    insecure: Annotated[
+        bool,
+        typer.Option(
+            "--insecure",
+            help="Skip TLS certificate verification (for self-signed endpoints). Use with caution.",
+        ),
+    ] = False,
 ) -> None:
     """Run a security audit against an LLM [bold cyan]ENDPOINT[/bold cyan].
 
@@ -217,7 +231,32 @@ def audit(
         request_template=request_template,
         response_path=response_path,
         verbose=verbose,
+        dry_run=dry_run,
+        insecure=insecure,
     )
+
+    if dry_run:
+        probe_names = probe_list if probe_list else list(ALL_PROBES.keys())
+        console.print("[bold cyan]llm-audit[/bold cyan] [dim]dry-run mode[/dim]\n")
+        console.print(f"  [bold]Endpoint:[/bold]  {endpoint}")
+        console.print(f"  [bold]Model:[/bold]     {model or '(not set)'}")
+        console.print(f"  [bold]Timeout:[/bold]   {timeout}s")
+        console.print(f"  [bold]Concurrency:[/bold] {concurrency}")
+        console.print(f"  [bold]Format:[/bold]    {output_format}")
+        console.print(f"  [bold]Insecure:[/bold]  {insecure}")
+        if request_template:
+            console.print(f"  [bold]Template:[/bold]  {request_template}")
+        if response_path:
+            console.print(f"  [bold]Resp path:[/bold] {response_path}")
+        console.print(f"\n  [bold]Probes ({len(probe_names)}):[/bold]")
+        for name in probe_names:
+            cls = ALL_PROBES.get(name)
+            if cls:
+                console.print(f"    [cyan]{name}[/cyan] — {cls.owasp_id} — {cls.description}")
+            else:
+                console.print(f"    [red]{name}[/red] — unknown probe")
+        console.print("\n[green]Configuration is valid. No requests were sent.[/green]")
+        raise typer.Exit(code=0)
 
     try:
         report = asyncio.run(run_audit(config))
