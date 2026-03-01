@@ -36,7 +36,8 @@ async def run_audit(config: AuditConfig) -> AuditReport:
     concurrency: int = config.get("concurrency") or 2
     semaphore = asyncio.Semaphore(concurrency)
 
-    async with httpx.AsyncClient() as client:
+    verify = not config.get("insecure", False)
+    async with httpx.AsyncClient(verify=verify) as client:
         results: dict[str, ProbeResult] = {}
 
         gathered = await asyncio.gather(
