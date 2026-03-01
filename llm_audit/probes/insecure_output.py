@@ -123,6 +123,7 @@ class InsecureOutputProbe(BaseProbe):
     Checks whether the model echoes dangerous payloads.
     """
 
+    probe_key = "insecure_output"
     name = "Insecure Output Handling"
     owasp_id = "LLM02"
     description = (

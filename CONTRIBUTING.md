@@ -23,9 +23,9 @@ pytest tests/ -v                # Unit tests
 ## Adding a new probe
 
 1. Create `llm_audit/probes/your_probe.py` inheriting from `BaseProbe`
-2. Set class attributes: `name`, `owasp_id`, `description`
+2. Set class attributes: `probe_key`, `name`, `owasp_id`, `description`
 3. Implement `async def run(self, client) -> ProbeResult`
-4. Register it in `llm_audit/probes/__init__.py` → `ALL_PROBES`
+4. _(Auto-registered)_ — the dynamic registry discovers any `BaseProbe` subclass with a non-empty `probe_key`
 5. Add it to the relevant group in `llm_audit/types.py` → `PROBE_GROUPS`
 6. Write tests in `tests/test_probes.py` using `pytest-httpx` to mock HTTP responses
 7. Update `README.md` tables (Covered vulnerabilities, Probe groups)
@@ -44,6 +44,7 @@ from llm_audit.types import Confidence, ProbeResult, Severity
 
 
 class YourProbe(BaseProbe):
+    probe_key = "your_probe"
     name = "Your Probe Name"
     owasp_id = "LLMxx"
     description = "What this probe tests."

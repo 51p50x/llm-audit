@@ -104,6 +104,17 @@ def test_audit_dry_run_with_custom_template() -> None:
     assert "data.text" in result.output
 
 
+def test_audit_dry_run_with_proxy() -> None:
+    result = runner.invoke(app, [
+        "audit", ENDPOINT,
+        "--model", "test-model",
+        "--dry-run",
+        "--proxy", "http://proxy.corp:8080",
+    ])
+    assert result.exit_code == 0
+    assert "proxy.corp" in result.output
+
+
 def test_audit_missing_endpoint() -> None:
     result = runner.invoke(app, ["audit"])
     assert result.exit_code != 0

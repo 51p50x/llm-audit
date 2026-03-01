@@ -103,6 +103,7 @@ _REFUSAL_MARKERS: list[str] = [
 class DataLeakageProbe(BaseProbe):
     """Tests for sensitive information disclosure (OWASP LLM06)."""
 
+    probe_key = "data_leakage"
     name = "Sensitive Information Disclosure"
     owasp_id = "LLM06"
     description = (

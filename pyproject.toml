@@ -9,6 +9,9 @@ description = "Automated security testing for LLM endpoints — OWASP Top 10 vul
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
+authors = [
+    { name = "51p50x" },
+]
 keywords = [
     "llm", "security", "audit", "owasp", "prompt-injection",
     "jailbreak", "red-teaming", "ai-safety", "penetration-testing",
@@ -42,7 +45,7 @@ llm-audit = "llm_audit.cli:app"
 Homepage = "https://github.com/51p50x/llm-audit"
 Repository = "https://github.com/51p50x/llm-audit"
 Issues = "https://github.com/51p50x/llm-audit/issues"
-"Ko-fi" = "https://ko-fi.com/51p50x40822"
+Changelog = "https://github.com/51p50x/llm-audit/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = [

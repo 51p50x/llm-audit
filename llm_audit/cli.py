@@ -192,6 +192,15 @@ def audit(
             help="Skip TLS certificate verification (for self-signed endpoints). Use with caution.",
         ),
     ] = False,
+    proxy: Annotated[
+        str | None,
+        typer.Option(
+            "--proxy",
+            envvar="LLM_AUDIT_PROXY",
+            help="HTTP/HTTPS proxy URL (e.g. http://proxy.corp:8080). Also reads LLM_AUDIT_PROXY.",
+            show_default=False,
+        ),
+    ] = None,
 ) -> None:
     """Run a security audit against an LLM [bold cyan]ENDPOINT[/bold cyan].
 
@@ -233,6 +242,7 @@ def audit(
         verbose=verbose,
         dry_run=dry_run,
         insecure=insecure,
+        proxy=proxy,
     )
 
     if dry_run:
@@ -244,6 +254,8 @@ def audit(
         console.print(f"  [bold]Concurrency:[/bold] {concurrency}")
         console.print(f"  [bold]Format:[/bold]    {output_format}")
         console.print(f"  [bold]Insecure:[/bold]  {insecure}")
+        if proxy:
+            console.print(f"  [bold]Proxy:[/bold]    {proxy}")
         if request_template:
             console.print(f"  [bold]Template:[/bold]  {request_template}")
         if response_path:

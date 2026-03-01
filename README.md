@@ -12,6 +12,7 @@
 ## Table of contents
 
 - [Covered vulnerabilities](#covered-vulnerabilities)
+- [Output examples](#output-examples)
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Quick start](#quick-start)
@@ -34,7 +35,6 @@
 - [Development](#development)
 - [Roadmap](#roadmap)
 - [Limitations & scope](#limitations--scope)
-- [Support this project](#support-this-project)
 - [Contact](#contact)
 
 ## Covered vulnerabilities
@@ -50,6 +50,53 @@
 | `model_dos` | LLM04 | Metric | Latency degradation via context flooding, repetition bombs, algorithmic complexity |
 | `excessive_agency` | LLM08 | Semantic | Privilege escalation, unauthorised actions, tool/function abuse |
 
+## Output examples
+
+### Rich terminal (default)
+
+<!-- TODO: Replace with a real screenshot after running against a live endpoint -->
+<!-- ![Rich terminal output](docs/screenshots/rich-output.png) -->
+
+```
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                    llm-audit — Security Report                   ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+  Endpoint:  https://api.openai.com/v1/chat/completions
+  Model:     gpt-4o
+  Score:     6/8 passed (75%)
+
+  ✅ PASS  Direct Prompt Injection     LLM01  HIGH    HIGH
+  ❌ FAIL  Jailbreak                   LLM01  CRITICAL HIGH
+  ✅ PASS  Indirect Prompt Injection   LLM01  HIGH    MEDIUM
+  ✅ PASS  Sensitive Information Disc.  LLM06  HIGH    HIGH
+  ❌ FAIL  Insecure Output Handling    LLM02  HIGH    HIGH
+  ✅ PASS  Training Data Extraction    LLM06  HIGH    MEDIUM
+  ✅ PASS  Model Denial of Service     LLM04  INFO    LOW
+  ✅ PASS  Excessive Agency            LLM08  HIGH    MEDIUM
+```
+
+### HTML report
+
+<!-- TODO: Replace with a real screenshot of the HTML report -->
+<!-- ![HTML report output](docs/screenshots/html-report.png) -->
+
+The HTML report features a dark theme with a security score dashboard, expandable probe details, severity badges, and is fully self-contained (no external dependencies).
+
+### JSON output
+
+```bash
+llm-audit audit https://api.openai.com/v1/chat/completions -k $KEY -m gpt-4o -f json | jq .summary
+```
+
+```json
+{
+  "total": 8,
+  "passed": 6,
+  "failed": 2,
+  "by_severity": { "CRITICAL": 1, "HIGH": 1, "MEDIUM": 0, "INFO": 0 }
+}
+```
+
 ## Requirements
 
 - **Python 3.10+**
@@ -58,7 +105,10 @@
 ## Installation
 
 ```bash
-# From source (recommended for development)
+# From PyPI (recommended)
+pip install llm-audit
+
+# From source (for development)
 git clone https://github.com/51p50x/llm-audit.git
 cd llm-audit
 pip install -e ".[dev]"
@@ -146,6 +196,7 @@ llm-audit audit [OPTIONS] ENDPOINT
 | `--verbose` | `-v` | Show evidence and recommendations for passing probes | `false` |
 | `--dry-run` | | Validate config and list probes without sending requests | `false` |
 | `--insecure` | | Skip TLS certificate verification (self-signed endpoints) | `false` |
+| `--proxy` | | HTTP/HTTPS proxy URL (e.g. `http://proxy.corp:8080`) | `None` |
 
 ## Environment variables
 
@@ -153,6 +204,7 @@ llm-audit audit [OPTIONS] ENDPOINT
 |---|---|
 | `LLM_AUDIT_API_KEY` | Bearer token for the endpoint (alternative to `--api-key`) |
 | `LLM_AUDIT_AUTH` | Full `Authorization` header value (alternative to `--auth`) |
+| `LLM_AUDIT_PROXY` | HTTP/HTTPS proxy URL (alternative to `--proxy`) |
 
 ## Output formats
 
@@ -463,14 +515,14 @@ Planned features for upcoming releases:
 
 | Feature | Status | Target |
 |---|---|---|
-| PyPI publishing (`pip install llm-audit`) | Planned | v0.3.0 |
-| Dynamic probe registry (auto-discover custom probes) | Planned | v0.3.0 |
-| `--proxy` flag for corporate environments | Planned | v0.3.0 |
-| Custom payloads from YAML files | Planned | v0.4.0 |
-| `--runs N` flag for averaging non-deterministic results | Planned | v0.4.0 |
-| Multilingual adversarial payloads | Planned | v0.5.0 |
-| LLM-as-judge mode for reduced false positives | Planned | v0.5.0 |
-| PDF report export | Planned | v0.5.0 |
+| PyPI publishing (`pip install llm-audit`) | ✅ Done | v0.2.0 |
+| Dynamic probe registry (auto-discover custom probes) | ✅ Done | v0.2.0 |
+| `--proxy` flag for corporate environments | ✅ Done | v0.2.0 |
+| Custom payloads from YAML files | Planned | v0.3.0 |
+| `--runs N` flag for averaging non-deterministic results | Planned | v0.3.0 |
+| Multilingual adversarial payloads | Planned | v0.4.0 |
+| LLM-as-judge mode for reduced false positives | Planned | v0.4.0 |
+| PDF report export | Planned | v0.4.0 |
 | Slack / email notifications on CI failures | Planned | future |
 
 Have a feature request? [Open an issue](https://github.com/51p50x/llm-audit/issues) or reach out in the [Contact](#contact) section.

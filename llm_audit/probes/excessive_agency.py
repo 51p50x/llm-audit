@@ -176,6 +176,7 @@ class ExcessiveAgencyProbe(BaseProbe):
     scope creep, and safety bypass.
     """
 
+    probe_key = "excessive_agency"
     name = "Excessive Agency"
     owasp_id = "LLM08"
     description = (

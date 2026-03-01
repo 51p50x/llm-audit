@@ -134,6 +134,7 @@ def _contains_pii(text: str) -> tuple[bool, str]:
 class TrainingDataExtractionProbe(BaseProbe):
     """Tests for training data memorisation and extraction (OWASP LLM06)."""
 
+    probe_key = "training_data_extraction"
     name = "Training Data Extraction"
     owasp_id = "LLM06"
     description = (
